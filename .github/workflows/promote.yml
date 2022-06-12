@@ -1,0 +1,67 @@
+name: Promote to live
+on: 
+  workflow_dispatch:
+    inputs:
+      track:
+        description: 'Track'     
+        required: true
+        default: 'stg'
+      skip-canary:
+        type: boolean
+        description: Skip Canary
+
+jobs:
+  promote:
+    name: Promote staging version to live
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Generate dalamud-distrib version file
+      shell: powershell
+      env:
+        DALAMUD_TRACK: ${{ github.event.inputs.track }}
+        SKIP_CANARY: ${{ github.event.inputs.skip-canary }}
+      run: |
+        $trackName = $env:DALAMUD_TRACK
+        $skipCanary = $env:SKIP_CANARY
+        
+        Expand-Archive -Path ".\${trackName}\latest.zip" -DestinationPath .\scratch
+        
+        $dllBytes = [System.IO.File]::ReadAllBytes("$(Get-Location)\scratch\Dalamud.dll")
+        $assembly = [System.Reflection.Assembly]::Load($dllBytes)
+        $newVersion = $assembly.GetName().Version.ToString()
+        Remove-Item -Force -Recurse .\scratch
+
+        $versionData = Get-Content .\version | ConvertFrom-Json
+        $oldVersion = $versionData.AssemblyVersion
+        if ($oldVersion -eq $newVersion) {
+          Write-Host "Nothing to promote"
+        } elseif ($skipCanary -eq 'true') {
+          Copy-Item -Force -Path ".\${trackName}\latest.zip" -Destination .\latest.zip
+          $versionData.AssemblyVersion = $newVersion
+          $versionText = $versionData | ConvertTo-Json -Compress
+          [System.IO.File]::WriteAllLines(".\version", $versionText)
+          
+          Write-Host "Promotion OK with skip canary"
+        } else {
+          Copy-Item -Force -Path ".\${trackName}\latest.zip" -Destination .\canary\latest.zip
+          $versionData.AssemblyVersion = $newVersion
+          $versionText = $versionData | ConvertTo-Json -Compress
+          [System.IO.File]::WriteAllLines(".\canary\version", $versionText)
+          
+          Write-Host "Promotion OK for canary"
+        }
+        
+        echo "DVER=${newVersion}" >> $Env:GITHUB_ENV
+        
+    - name: Commit changes
+      shell: bash
+      run: |
+        git config --global user.name "Actions User"
+        git config --global user.email "actions@github.com"
+        
+        git add .
+        git commit -m "[CI] Promoting for ${DVER} from ${{ github.event.inputs.track }}, skip canary: ${{ github.event.inputs.skip-canary }}" || true
+        
+        git push origin main || true
