@@ -65,3 +65,6 @@ jobs:
         git commit -m "[CI] Promoting for ${DVER} from ${{ github.event.inputs.track }}, skip canary: ${{ github.event.inputs.skip-canary }}" || true
         
         git push origin main || true
+        
+    - name: Clear Web Services cache
+      run: curl -X POST --fail https://aonyx.ffxiv.wang/Dalamud/Release/ClearCache?key=${{ secrets.CACHE_CLEAR_KEY }}
