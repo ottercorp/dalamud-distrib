@@ -46,6 +46,7 @@ jobs:
             Remove-Item -Force -Recurse .\scratch\runtimes\unix
             Remove-Item -Force -Recurse .\scratch\runtimes\win
             Remove-Item -Force -Recurse .\scratch\runtimes\win-x86
+            Remove-Item -Force -Recurse .\scratch\hashes.json
 
             Write-Host "Create hashlist"
             .\CreateHashList.ps1 .\scratch 
