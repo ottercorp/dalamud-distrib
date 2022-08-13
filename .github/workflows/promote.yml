@@ -23,8 +23,8 @@ jobs:
         DALAMUD_TRACK: ${{ github.event.inputs.track }}
         SKIP_CANARY: ${{ github.event.inputs.skip-canary }}
       run: |
-        $trackName = 'stg'
-        $skipCanary = 'true'
+        $trackName = $env:DALAMUD_TRACK
+        $skipCanary = $env:SKIP_CANARY
 
         Expand-Archive -Path ".\${trackName}\latest.zip" -DestinationPath .\scratch
                 
@@ -49,7 +49,8 @@ jobs:
 
             Write-Host "Create hashlist"
             .\CreateHashList.ps1 .\scratch 
-            
+
+            Remove-Item -Force .\${trackName}\latest.7z
             7z a .\${trackName}\latest.7z .\scratch\ -t7z -mx=9 
             if ($skipCanary -eq 'true') {
                 Copy-Item -Force -Path ".\${trackName}\latest.7z" -Destination .\latest.7z
