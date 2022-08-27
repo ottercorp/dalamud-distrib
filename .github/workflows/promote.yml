@@ -52,7 +52,9 @@ jobs:
             .\CreateHashList.ps1 .\scratch 
 
             Remove-Item -Force .\${trackName}\latest.7z
-            7z a .\${trackName}\latest.7z .\scratch\ -t7z -mx=9 
+            Remove-Item -Force -Recurse .\scratch
+
+            7z a .\${trackName}\latest.7z .\ -t7z -mx=9 
             if ($skipCanary -eq 'true') {
                 Copy-Item -Force -Path ".\${trackName}\latest.7z" -Destination .\latest.7z
                 $versionData.AssemblyVersion = $newVersion
@@ -70,8 +72,6 @@ jobs:
                 Write-Host "Promotion OK for canary"
             }
         }
-
-        Remove-Item -Force -Recurse .\scratch  
 
         echo "DVER=${newVersion}"
         
