@@ -30,34 +30,55 @@ jobs:
         $trackName = $env:DALAMUD_TRACK
         $skipCanary = $env:SKIP_CANARY
         $forceUpdate = $env:FORCE_UPDATE
-        
-        Expand-Archive -Path ".\${trackName}\latest.zip" -DestinationPath .\scratch
-        
+
+        Expand-Archive -Path ".\${trackName}\latest.zip" -DestinationPath .\scratch -Force
+                
         $dllBytes = [System.IO.File]::ReadAllBytes("$(Get-Location)\scratch\Dalamud.dll")
         $assembly = [System.Reflection.Assembly]::Load($dllBytes)
         $newVersion = $assembly.GetName().Version.ToString()
-        Remove-Item -Force -Recurse .\scratch
+
         $versionData = Get-Content .\version | ConvertFrom-Json
         $oldVersion = $versionData.AssemblyVersion
         if (($oldVersion -eq $newVersion) -and ($forceUpdate -eq 'false')) {
-          Write-Host "Nothing to promote"
-        } elseif ($skipCanary -eq 'true') {
-          Copy-Item -Force -Path ".\${trackName}\latest.zip" -Destination .\latest.zip
-          $versionData.AssemblyVersion = $newVersion
-          $versionText = $versionData | ConvertTo-Json -Compress
-          [System.IO.File]::WriteAllLines(".\version", $versionText)
-          
-          Write-Host "Promotion OK with skip canary"
-        } else {
-          Copy-Item -Force -Path ".\${trackName}\latest.zip" -Destination .\canary\latest.zip
-          $versionData.AssemblyVersion = $newVersion
-          $versionText = $versionData | ConvertTo-Json -Compress
-          [System.IO.File]::WriteAllLines(".\canary\version", $versionText)
-          
-          Write-Host "Promotion OK for canary"
+            Write-Host "Nothing to promote"
         }
-        
-        echo "DVER=${newVersion}" >> $Env:GITHUB_ENV
+        else {
+            Write-Host "Remove useless files and package scratch"
+            Remove-Item -Force -Recurse .\scratch\*.pdb
+            Remove-Item -Force -Recurse .\scratch\*.xml
+            Remove-Item -Force -Recurse .\scratch\runtimes\linux-x64
+            Remove-Item -Force -Recurse .\scratch\runtimes\osx-x64
+            Remove-Item -Force -Recurse .\scratch\runtimes\unix
+            Remove-Item -Force -Recurse .\scratch\runtimes\win
+            Remove-Item -Force -Recurse .\scratch\runtimes\win-x86
+            Remove-Item -Force -Recurse .\scratch\hashes.json
+
+            Write-Host "Create hashlist"
+            .\CreateHashList.ps1 .\scratch 
+
+            Remove-Item -Force .\${trackName}\latest.7z
+            Remove-Item -Force -Recurse .\scratch
+
+            7z a .\${trackName}\latest.7z .\ -t7z -mx=9 
+            if ($skipCanary -eq 'true') {
+                Copy-Item -Force -Path ".\${trackName}\latest.7z" -Destination .\latest.7z
+                $versionData.AssemblyVersion = $newVersion
+                $versionText = $versionData | ConvertTo-Json -Compress
+                [System.IO.File]::WriteAllLines(".\version", $versionText)
+                  
+                Write-Host "Promotion OK with skip canary"
+            }
+            else {
+                Copy-Item -Force -Path ".\${trackName}\latest.7z" -Destination .\canary\latest.7z
+                $versionData.AssemblyVersion = $newVersion
+                $versionText = $versionData | ConvertTo-Json -Compress
+                [System.IO.File]::WriteAllLines(".\canary\version", $versionText)
+                  
+                Write-Host "Promotion OK for canary"
+            }
+        }
+
+        echo "DVER=${newVersion}"
         
     - name: Commit changes
       shell: bash
