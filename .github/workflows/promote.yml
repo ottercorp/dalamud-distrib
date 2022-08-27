@@ -6,6 +6,9 @@ on:
         description: 'Track'     
         required: true
         default: 'stg'
+      force-update:
+        type: boolean
+        description: Force commit
       skip-canary:
         type: boolean
         description: Skip Canary
@@ -25,6 +28,7 @@ jobs:
       run: |
         $trackName = $env:DALAMUD_TRACK
         $skipCanary = $env:SKIP_CANARY
+        $forceUpdate = $env:FORCE_UPDATE
 
         Expand-Archive -Path ".\${trackName}\latest.zip" -DestinationPath .\scratch
                 
@@ -34,7 +38,7 @@ jobs:
 
         $versionData = Get-Content .\version | ConvertFrom-Json
         $oldVersion = $versionData.AssemblyVersion
-        if ($oldVersion -eq $newVersion) {
+        if (($oldVersion -eq $newVersion) -and ($forceUpdate -eq 'false')) {
             Write-Host "Nothing to promote"
         }
         else {
