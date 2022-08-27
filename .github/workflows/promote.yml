@@ -25,12 +25,13 @@ jobs:
       env:
         DALAMUD_TRACK: ${{ github.event.inputs.track }}
         SKIP_CANARY: ${{ github.event.inputs.skip-canary }}
+        FORCE_UPDATE: ${{ github.event.inputs.force-update }}
       run: |
         $trackName = $env:DALAMUD_TRACK
         $skipCanary = $env:SKIP_CANARY
         $forceUpdate = $env:FORCE_UPDATE
 
-        Expand-Archive -Path ".\${trackName}\latest.zip" -DestinationPath .\scratch
+        Expand-Archive -Path ".\${trackName}\latest.zip" -DestinationPath .\scratch -Force
                 
         $dllBytes = [System.IO.File]::ReadAllBytes("$(Get-Location)\scratch\Dalamud.dll")
         $assembly = [System.Reflection.Assembly]::Load($dllBytes)
