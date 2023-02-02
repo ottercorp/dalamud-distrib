@@ -52,7 +52,7 @@ jobs:
             Remove-Item -Force -Recurse .\scratch\hashes.json
 
             Write-Host "Create hashlist"
-            .\CreateHashList.ps1 .\scratch 
+            $hash = .\CreateHashList.ps1 .\scratch 
 
             Remove-Item -Force .\${trackName}\latest.7z
 
@@ -60,6 +60,7 @@ jobs:
             if ($skipCanary -eq 'true') {
                 Copy-Item -Force -Path ".\${trackName}\latest.7z" -Destination .\latest.7z
                 $versionData.AssemblyVersion = $newVersion
+                $versionData.Hash = $hash
                 $versionText = $versionData | ConvertTo-Json -Compress
                 [System.IO.File]::WriteAllLines(".\version", $versionText)
                   
@@ -68,6 +69,7 @@ jobs:
             else {
                 Copy-Item -Force -Path ".\${trackName}\latest.7z" -Destination .\canary\latest.7z
                 $versionData.AssemblyVersion = $newVersion
+                $versionData.Hash = $hash
                 $versionText = $versionData | ConvertTo-Json -Compress
                 [System.IO.File]::WriteAllLines(".\canary\version", $versionText)
                   

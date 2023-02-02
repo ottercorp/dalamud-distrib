@@ -12,6 +12,4 @@ $hashes | ConvertTo-Json | Out-File -FilePath "hashes.json"
 
 $mainhash = (Get-FileHash "hashes.json" -Algorithm MD5).Hash
 Set-Location ..
-$Json = Get-Content "version" -Raw | ConvertFrom-Json
-$Json.Hash = $mainhash
-$Json | ConvertTo-Json | Set-Content "version"
+return $mainhash
