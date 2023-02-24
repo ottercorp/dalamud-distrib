@@ -43,20 +43,16 @@ jobs:
             Write-Host "Nothing to promote"
         }
         else {
-            Write-Host "Remove useless files and package scratch"
-            Remove-Item -Force -Recurse .\scratch\*.pdb
-            Remove-Item -Force -Recurse .\scratch\*.xml
-            Remove-Item -Force -Recurse .\scratch\runtimes\linux-x64
-            Remove-Item -Force -Recurse .\scratch\runtimes\osx-x64
-            Remove-Item -Force -Recurse .\scratch\runtimes\win-x86
-            Remove-Item -Force -Recurse .\scratch\hashes.json
+            Write-Host "Remove useless files"
+            .\PruneDalamud.ps1
 
             Write-Host "Create hashlist"
             $hash = .\CreateHashList.ps1 .\scratch 
 
+            Write-Host "Create 7z package"
             Remove-Item -Force .\${trackName}\latest.7z
-
             7z a .\${trackName}\latest.7z .\scratch\* -t7z -mx=9 
+
             if ($skipCanary -eq 'true') {
                 Copy-Item -Force -Path ".\${trackName}\latest.7z" -Destination .\latest.7z
                 $versionData.AssemblyVersion = $newVersion
