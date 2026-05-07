@@ -3,15 +3,20 @@ on:
   workflow_dispatch:
     inputs:
       track:
-        description: 'Track'     
+        description: 'Track from'     
         required: true
         default: 'stg'
+        type: choice
+        options:
+          - stg
+          - canary
       force-update:
         type: boolean
         description: Force commit
-      skip-canary:
+        default: true
+      is-release:
         type: boolean
-        description: Skip Canary
+        description: Release
 
 jobs:
   promote:
@@ -24,11 +29,11 @@ jobs:
       shell: powershell
       env:
         DALAMUD_TRACK: ${{ github.event.inputs.track }}
-        SKIP_CANARY: ${{ github.event.inputs.skip-canary }}
+        IS_RELEASE: ${{ github.event.inputs.is-release }}
         FORCE_UPDATE: ${{ github.event.inputs.force-update }}
       run: |
         $trackName = $env:DALAMUD_TRACK
-        $skipCanary = $env:SKIP_CANARY
+        $isRelease = $env:IS_RELEASE
         $forceUpdate = $env:FORCE_UPDATE
 
         Expand-Archive -Path ".\${trackName}\latest.zip" -DestinationPath .\scratch -Force
@@ -51,25 +56,24 @@ jobs:
 
             Write-Host "Create 7z package"
             Remove-Item -Force .\${trackName}\latest.7z
-            7z a .\${trackName}\latest.7z .\scratch\* -t7z -mx=9 
+            7z a .\${trackName}\latest.7z .\scratch\* -t7z -mx=9
 
-            if ($skipCanary -eq 'true') {
-                Copy-Item -Force -Path ".\${trackName}\latest.7z" -Destination .\latest.7z
-                $versionData.AssemblyVersion = $newVersion
-                $versionData.Hash = $hash
-                $versionText = $versionData | ConvertTo-Json -Compress
-                [System.IO.File]::WriteAllLines(".\version", $versionText)
-                  
-                Write-Host "Promotion OK with skip canary"
+            $versionData.AssemblyVersion = $newVersion
+            $versionData.Hash = $hash
+            $versionText = $versionData | ConvertTo-Json -Compress
+
+            if ($trackName -ne "canary") {
+              Copy-Item -Force -Path ".\${trackName}\latest.7z" -Destination .\canary\latest.7z
+              [System.IO.File]::WriteAllLines(".\canary\version", $versionText)
+              
+              Write-Host "Promotion OK for canary"
             }
-            else {
-                Copy-Item -Force -Path ".\${trackName}\latest.7z" -Destination .\canary\latest.7z
-                $versionData.AssemblyVersion = $newVersion
-                $versionData.Hash = $hash
-                $versionText = $versionData | ConvertTo-Json -Compress
-                [System.IO.File]::WriteAllLines(".\canary\version", $versionText)
-                  
-                Write-Host "Promotion OK for canary"
+
+            if ($isRelease -eq 'true') {
+                Copy-Item -Force -Path ".\${trackName}\latest.7z" -Destination .\latest.7z
+                [System.IO.File]::WriteAllLines(".\version", $versionText)
+                
+                Write-Host "Promotion OK with release"
             }
         }
         
@@ -84,7 +88,7 @@ jobs:
         git config --global user.email "actions@github.com"
         
         git add .
-        git commit -m "[CI] Promoting for ${DVER} from ${{ github.event.inputs.track }}, skip canary: ${{ github.event.inputs.skip-canary }}" || true
+        git commit -m "[CI] Promoting for ${DVER} from ${{ github.event.inputs.track }}, release: ${{ github.event.inputs.is-release }}" || true
         
         git push origin main || true
         
