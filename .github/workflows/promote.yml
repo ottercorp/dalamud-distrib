@@ -37,7 +37,7 @@ jobs:
         $assembly = [System.Reflection.Assembly]::Load($dllBytes)
         $newVersion = $assembly.GetName().Version.ToString()
 
-        $versionData = Get-Content .\version | ConvertFrom-Json
+        $versionData = Get-Content .\${trackName}\version | ConvertFrom-Json
         $oldVersion = $versionData.AssemblyVersion
         if (($oldVersion -eq $newVersion) -and ($forceUpdate -eq 'false')) {
             Write-Host "Nothing to promote"
