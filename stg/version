@@ -1,1 +1,1 @@
-{"AssemblyVersion":"15.0.4.0","SupportedGameVer":"2026.11.03.0000.0000","RuntimeVersion":"10.0.1","RuntimeRequired":true,"Key":"crashing","Hash":"","GitSha":"3dcf078426f9d74e8036d163715949c8f3446556","Revision":"8300"}
+{"AssemblyVersion":"15.0.4.0-2-g8bf76fca5","SupportedGameVer":"2026.11.03.0000.0000","RuntimeVersion":"10.0.1","RuntimeRequired":true,"Key":"crashing","Hash":"","GitSha":"8bf76fca5e32d3554dfca89132470cf67a5ac620","Revision":"8302"}
